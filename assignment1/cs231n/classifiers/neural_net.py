@@ -76,7 +76,9 @@ class TwoLayerNet(object):
     # Store the result in the scores variable, which should be an array of      #
     # shape (N, C).                                                             #
     #############################################################################
-    pass
+    hidden_lay = np.dot(X, W1) + b1
+    hidden_lay = np.maximum(0, hidden_lay)   ##ReLU   (N, H)
+    scores = np.dot(hidden_lay, W2) + b2
     #############################################################################
     #                              END OF YOUR CODE                             #
     #############################################################################
@@ -93,7 +95,11 @@ class TwoLayerNet(object):
     # in the variable loss, which should be a scalar. Use the Softmax           #
     # classifier loss.                                                          #
     #############################################################################
-    pass
+    #
+    
+    f = scores - np.max(scores, axis = 1, keepdims = True)
+    loss = -f[range(N), y].sum() + np.log(np.exp(f).sum(axis = 1)).sum()
+    loss = loss / N + 0.5 * reg * (np.sum(W1 * W1) + np.sum(W2 * W2))
     #############################################################################
     #                              END OF YOUR CODE                             #
     #############################################################################
@@ -105,7 +111,19 @@ class TwoLayerNet(object):
     # and biases. Store the results in the grads dictionary. For example,       #
     # grads['W1'] should store the gradient on W1, and be a matrix of same size #
     #############################################################################
-    pass
+    prob = np.exp(f) / np.sum(np.exp(f), axis=1, keepdims=True)
+    prob[range(N), y] -= 1.0
+    prob /= N
+    grads['W2'] = np.dot(hidden_lay.T, prob) + reg* W2
+    grads['b2'] = np.sum(prob, axis = 0)
+    
+    tmp = np.zeros_like(hidden_lay)
+    tmp[hidden_lay>0] = 1.0
+    delta2 = prob.dot(W2.T) * tmp
+    grads['W1'] = np.dot(X.T, delta2) + reg* W1
+    grads['b1'] = np.sum(delta2, axis = 0)
+    
+    
     #############################################################################
     #                              END OF YOUR CODE                             #
     #############################################################################
