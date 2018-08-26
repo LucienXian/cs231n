@@ -289,7 +289,7 @@ class FullyConnectedNet(object):
         dx_last = dloss_final
         for i in range(self.num_layers-1, 0, -1):
             if self.use_dropout:
-                dx_last = dropout_backward(dx_last, dropout_cache[str(i)])
+                dx_last = dropout_backward(dx_last, drop_cache[str(i)])
 
             drelu = relu_backward(dx_last, relu_cache[str(i)])
 
