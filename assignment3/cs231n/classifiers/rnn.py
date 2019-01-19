@@ -141,12 +141,16 @@ class CaptioningRNN(object):
         x, x_cache = word_embedding_forward(captions_in, W_embed)
         if self.cell_type == "rnn":
             h, h_cache = rnn_forward(x, h0, Wx, Wh, b)
+        if self.cell_type == "lstm":
+            h, h_cache = lstm_forward(x, h0, Wx, Wh, b)
         out, out_cache = temporal_affine_forward(h, W_vocab, b_vocab)
         loss, dout = temporal_softmax_loss(out, captions_out, mask, verbose=False)
         
         dh_vocab, dw_vocab, db_vocab = temporal_affine_backward(dout, out_cache)
         if self.cell_type == "rnn":
             dx_embed, dh0, dWx, dWh, db = rnn_backward(dh_vocab, h_cache)
+        if self.cell_type == "lstm":
+            dx_embed, dh0, dWx, dWh, db = lstm_backward(dh_vocab, h_cache)
         dW_embedding = word_embedding_backward(dx_embed, x_cache)
         _, dWproj, dbproj = affine_backward(dh0, h0_cache)
         
@@ -225,14 +229,18 @@ class CaptioningRNN(object):
         # a loop.                                                                 #
         ###########################################################################
         h0, _ = affine_forward(features, W_proj, b_proj)
+        c0 = np.zeros_like(h0)
         for i in range(max_length):
             # current word
             word = np.ones((N, 1), dtype=np.int32) * self._start
             x, _ = word_embedding_forward(word, W_embed)
             if self.cell_type == "rnn":
                 h, _ = rnn_step_forward(np.squeeze(x), h0, Wx, Wh, b)
+            if self.cell_type == "lstm":
+                h, c, _ = lstm_step_forward(np.squeeze(x), h0, c0, Wx, Wh, b)
             out, _ = temporal_affine_forward(h.reshape(N, 1, -1), W_vocab, b_vocab)
             h0 = h
+            c0 = c
             idx = np.squeeze(np.argmax(out, axis=2)) #shape as out, but remove axis
             captions[:, i] = idx
         ############################################################################
